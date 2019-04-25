@@ -1,5 +1,6 @@
 import cv2
 import time
+import argparse
 import numpy as np
 
 
@@ -185,12 +186,18 @@ def holo_overlays(rgb):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--video")
+    parser.add_argument("--visible", action="store_true")
+    args = parser.parse_args()
+
     start = time.time()
     frames = []
     corrected = []
     current_stack = []
     frames_output = []
-    video = 'input.mp4'
+    video = str(args.video)
+    print("Video name: " + video)
     resize_width = 300
     resize_height = 300
 
