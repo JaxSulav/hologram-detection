@@ -1,17 +1,49 @@
 import cv2
 import time
+import logging
 import argparse
 import numpy as np
 
 
 def write_video(output_video, fourcc, op_fps, op_size, op_array):
-    print("Starting to write to video")
+    print("Starting to write to video - detected.mp4")
     out = cv2.VideoWriter(output_video, fourcc, op_fps, op_size)
 
     for i in range(len(op_array)):
         out.write(op_array[i])
-        print("Frame: " + str(i))
+        logger.info("Frame: " + str(i))
     out.release()
+    if detected == True:
+        print("Hologram detected successfully")
+    else:
+        logger.warning("Cannot detect Hologram")
+
+    inp_video = cv2.VideoCapture(video)
+    op_video = cv2.VideoCapture("detected.mp4")
+
+    while True:
+        ret1, frame1 = inp_video.read()
+        ret2, frame2 = op_video.read()
+        try:
+            frame1 = cv2.resize(frame1, (640, 480))
+            frame2 = cv2.resize(frame2, (640, 480))
+
+        except:
+            inp_video = cv2.VideoCapture(video)
+            op_video = cv2.VideoCapture("detected.mp4")
+            ret1, frame1 = inp_video.read()
+            ret2, frame2 = op_video.read()
+            frame1 = cv2.resize(frame1, (640, 480))
+            frame2 = cv2.resize(frame2, (640, 480))
+
+        both = np.hstack((frame1, frame2))
+        both = cv2.resize(both, (640, 480))
+
+        cv2.imshow('output', both)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+           break
+
 
 def frame_job(video):
     global resize_width, resize_height, frames_output
@@ -19,11 +51,13 @@ def frame_job(video):
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     op_fps = 45
     op_size = (resize_width, resize_height)
+    print("Detecting Hologram.............")
+    print("Please wait, it may take some time......")
 
     cap = cv2.VideoCapture(video)
     currentFrame = 0
-    #for i in range(30):
-    while(cap.isOpened()):
+    for i in range(50):
+    # while(cap.isOpened()):
         ret, frame = cap.read()
         if ret == False:
             break
@@ -31,22 +65,22 @@ def frame_job(video):
             pass
         frames.append(frame)
 
-    print("Number of frames captured: " + str(len(frames)))
+    logger.info("Number of frames captured: " + str(len(frames)))
 
     bounds_job(frames) # fill corrected array with achieved perspective corrected and cropped images
 
-    print("Number of corrected frames: " + str(len(corrected)))
+    logger.info("Number of corrected frames: " + str(len(corrected)))
 
     del frames[:]
     for each in range(len(corrected)):
         current_stack.append(corrected[each])
 
-        print("length of current_stack: " + str(len(current_stack)))
+        logger.info("length of current_stack: " + str(len(current_stack)))
 
-        if len(current_stack) == 9:
+        if len(current_stack) == 7:
             holo_overlays(current_stack)
 
-            print("Number of frames in frames_output: " + str(len(frames_output)))
+            logger.info("Number of frames in frames_output: " + str(len(frames_output)))
             del current_stack[:]
     del corrected[:]
 
@@ -121,14 +155,14 @@ def bounds_job(img_array):
                 resized = cv2.resize(warped, (resize_width, resize_height))
                 corrected.append(resized)
             else:
-                print("Skipped: No rectangle detected !!!")
+                logger.info("Skipped: No rectangle detected !!!")
 
         except:
-            print("NO image !!!!!!")
+            logger.warning("NO image !!!!!!")
 
 
 def holo_overlays(rgb):
-    global resize_width, resize_height
+    global resize_width, resize_height, detected
     im_hsv = [cv2.cvtColor(image, cv2.COLOR_BGR2HSV) for image in rgb]
     error_list = []
 
@@ -147,6 +181,7 @@ def holo_overlays(rgb):
             error_list.append(error)
 
     max_error = max(error_list)
+
     del im_hsv[:]
     for errors in range(len(error_list)):
         current_error = error_list[errors]
@@ -157,6 +192,13 @@ def holo_overlays(rgb):
     for every_error in range(len(error_list)):
         error_list[every_error] = int(round(error_list[every_error]))
 
+    for error in range(len(error_list)):
+        if error_list[error] > 180:
+            detected = True
+            break
+        else:
+            pass
+
     reshaper = np.array(error_list, np.uint8)
     del error_list[:]
     error_array = reshaper.reshape(resize_width, resize_height)
@@ -165,6 +207,7 @@ def holo_overlays(rgb):
     blur = cv2.GaussianBlur(error_array,(5,5), 0)
     _, otsu = cv2.threshold(blur, 55, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
     threshold_array = cv2.adaptiveThreshold(error_array , 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 35)
+
 
     error_array = [] # stacking up every errors in error array was causing lag in program
     rgb_thresh = cv2.cvtColor(threshold, cv2.COLOR_GRAY2BGR)
@@ -191,17 +234,26 @@ if __name__ == '__main__':
     parser.add_argument("--visible", action="store_true")
     args = parser.parse_args()
 
-    start = time.time()
+    start_ts = time.time()
+    logFile = "./hologram " + str(start_ts) + ".log"
+    logger = logging.getLogger('hologram')
+    hdlr = logging.FileHandler(logFile)
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    hdlr.setFormatter(formatter)
+    logger.addHandler(hdlr)
+    logger.setLevel(logging.INFO)
+
+    detected = False
     frames = []
     corrected = []
     current_stack = []
     frames_output = []
     video = str(args.video)
-    print("Video name: " + video)
+    logger.info("Video name: " + video)
     resize_width = 300
     resize_height = 300
 
     frame_job(video)
 
-    end = time.time()
-    print("Time taken: " + str(end - start))
+    end_ts = time.time()
+    logger.info("Time taken: " + str(end_ts - start_ts) + " seconds")
