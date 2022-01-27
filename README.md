@@ -1,6 +1,6 @@
 HOLOGRAM DETECTION
 
-This project aims to detect a certain specific hologram in a video. This was my intern based project, long time ago.
+This project aims to detect a certain specific hologram in a video. This was my intern based project, a very long time ago. So, this is not maintained right now.
 
 Create and activate a virtual env:
 
