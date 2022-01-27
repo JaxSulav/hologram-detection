@@ -16,4 +16,4 @@ Run the script:
     python detection.py --video=input.mp4
 where, input = name of the video file
 
-Note: This project is no longer maintained. Feel free to contribute if you can
+<mark>Note: This project is no longer maintained. Feel free to contribute if you can</mark>
