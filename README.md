@@ -11,5 +11,5 @@ Install requirements:
 
 Run the script:
 
-    python detection.py --video=INPUT.mp4
-where, INPUT = name of the video file
+    python detection.py --video=input.mp4
+where, input = name of the video file

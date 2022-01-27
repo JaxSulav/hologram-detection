@@ -4,7 +4,7 @@ import logging
 import argparse
 import numpy as np
 
-
+logging.basicConfig(filename='logs/hologram.log', level=logging.DEBUG)
 def write_video(output_video, fourcc, op_fps, op_size, op_array):
     print("Starting to write to video - detected.mp4")
     out = cv2.VideoWriter(output_video, fourcc, op_fps, op_size)
@@ -25,20 +25,19 @@ def write_video(output_video, fourcc, op_fps, op_size, op_array):
         ret1, frame1 = inp_video.read()
         ret2, frame2 = op_video.read()
         try:
-            frame1 = cv2.resize(frame1, (640, 480))
-            frame2 = cv2.resize(frame2, (640, 480))
+            frame1 = cv2.resize(frame1, (300, 300))
+            frame2 = cv2.resize(frame2, (300, 300))
 
         except:
             inp_video = cv2.VideoCapture(video)
             op_video = cv2.VideoCapture("detected.mp4")
             ret1, frame1 = inp_video.read()
             ret2, frame2 = op_video.read()
-            frame1 = cv2.resize(frame1, (640, 480))
-            frame2 = cv2.resize(frame2, (640, 480))
+            frame1 = cv2.resize(frame1, (300, 300))
+            frame2 = cv2.resize(frame2, (300, 300))
 
         both = np.hstack((frame1, frame2))
         both = cv2.resize(both, (640, 480))
-
         cv2.imshow('output', both)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -49,15 +48,15 @@ def frame_job(video):
     global resize_width, resize_height, frames_output
     output_video = 'detected.mp4'
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    op_fps = 45
+    op_fps = 30
     op_size = (resize_width, resize_height)
     print("Detecting Hologram.............")
     print("Please wait, it may take some time......")
 
     cap = cv2.VideoCapture(video)
     currentFrame = 0
-    for i in range(50):
-    # while(cap.isOpened()):
+    #for i in range(50):
+    while(cap.isOpened()):
         ret, frame = cap.read()
         if ret == False:
             break
@@ -164,6 +163,7 @@ def bounds_job(img_array):
 def holo_overlays(rgb):
     global resize_width, resize_height, detected
     im_hsv = [cv2.cvtColor(image, cv2.COLOR_BGR2HSV) for image in rgb]
+    print("im_hsv :" + str(im_hsv))
     error_list = []
 
     for i in range(resize_width):
@@ -250,8 +250,8 @@ if __name__ == '__main__':
     frames_output = []
     video = str(args.video)
     logger.info("Video name: " + video)
-    resize_width = 300
-    resize_height = 300
+    resize_width = 100
+    resize_height = 100
 
     frame_job(video)
 
